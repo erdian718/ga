@@ -59,6 +59,13 @@ func TestRosenbrock(t *testing.T) {
 	}
 }
 
+func BenchmarkRosenbrock(b *testing.B) {
+	m := ga.New(1000, gen)
+	for i := 0; i < b.N; i++ {
+		m.Next()
+	}
+}
+
 func sqr(x float64) float64 {
 	return x * x
 }
