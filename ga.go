@@ -40,12 +40,11 @@ func New(n int, g func() Entity) *GA {
 		fentities: make([]float64, n),
 		tentities: make([]Entity, n),
 	}
-
-	for i := 0; i < n; i++ {
+	for i := range m.entities {
 		m.entities[i] = g()
 	}
 	m.fitness()
-	m.std = m.std0
+	m.std0 = m.std
 	return m
 }
 
@@ -77,15 +76,15 @@ func (m *GA) Next() Entity {
 
 // Evolve runs the GA model until the elite k generations have not changed,
 // or the max of iterations has been reached.
-func (m *GA) Evolve(k int, max int) Entity {
-	elite := m.elite
-	for i, j := 0, 0; i < k && i < max; i, j = i+1, j+1 {
+func (m *GA) Evolve(k int, max int) (Entity, bool) {
+	i, elite := 0, m.elite
+	for j := 0; i < k && j < max; i, j = i+1, j+1 {
 		x := m.Next()
 		if x != elite {
 			i, elite = 0, x
 		}
 	}
-	return elite
+	return elite, i >= k
 }
 
 func (m *GA) fitness() {
@@ -103,7 +102,13 @@ func (m *GA) fitness() {
 			m.elite, m.felite = x, f
 		}
 	}
-	m.mean, m.std = mean, math.Sqrt(std2-mean*mean)
+	m.mean = mean
+	std2 -= mean * mean
+	if std2 > 0 {
+		m.std = math.Sqrt(std2)
+	} else {
+		m.std = 1
+	}
 	m.sigmoid()
 }
 
