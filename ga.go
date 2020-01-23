@@ -11,7 +11,7 @@ import (
 type Entity interface {
 	Fitness() float64
 	Mutate() Entity
-	Crossover(Entity) Entity
+	Crossover(Entity, float64) Entity
 }
 
 // GA is a GA model.
@@ -59,11 +59,11 @@ func (m *GA) Felite() float64 {
 }
 
 // Next gets the next generation of GA model, and returns the current elite.
-func (m *GA) Next() Entity {
+func (m *GA) Next() (Entity, float64) {
 	pm := math.Exp(-10 * m.std / m.std0)
 	for i := range m.tentities {
-		x, y := m.select2()
-		z := x.Crossover(y)
+		x, y, w := m.select2()
+		z := x.Crossover(y, w)
 		if m.rnd.Float64() < pm {
 			z = z.Mutate()
 		}
@@ -71,20 +71,20 @@ func (m *GA) Next() Entity {
 	}
 	m.entities, m.tentities = m.tentities, m.entities
 	m.fitness()
-	return m.elite
+	return m.elite, m.felite
 }
 
 // Evolve runs the GA model until the elite k generations have not changed,
 // or the max of iterations has been reached.
-func (m *GA) Evolve(k int, max int) (Entity, bool) {
+func (m *GA) Evolve(k int, max int) (Entity, float64, bool) {
 	i, elite := 0, m.elite
 	for j := 0; i < k && j < max; i, j = i+1, j+1 {
-		x := m.Next()
+		x, _ := m.Next()
 		if x != elite {
 			i, elite = 0, x
 		}
 	}
-	return elite, i >= k
+	return elite, m.felite, i >= k
 }
 
 func (m *GA) fitness() {
@@ -121,25 +121,26 @@ func (m *GA) sigmoid() {
 	}
 }
 
-func (m *GA) select2() (Entity, Entity) {
+func (m *GA) select2() (Entity, Entity, float64) {
 	r1, r2 := m.rnd.Float64(), m.rnd.Float64()
 	if r1 > r2 {
 		r1, r2 = r2, r1
 	}
 	f0, d := m.fsum*r1, m.fsum*(r2-r1)
 	x, y := m.entities[0], m.entities[m.n-1]
+	wx, wy := 0.0, 0.0
 	for i, f := range m.fentities {
 		if f0 <= f {
 			if x == m.entities[0] {
-				x = m.entities[i]
+				x, wx = m.entities[i], f
 				f0 = f0 + d - f*r2
 				continue
 			} else {
-				y = m.entities[i]
+				y, wy = m.entities[i], f
 				break
 			}
 		}
 		f0 -= f
 	}
-	return x, y
+	return x, y, wx / (wx + wy)
 }

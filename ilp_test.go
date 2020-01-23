@@ -18,9 +18,9 @@ func (x ILP) Fitness() float64 {
 		s += d
 	}
 	if s > 0 {
-		return float64(f) - 100*math.Exp(float64(s)/10)
+		return -s
 	} else {
-		return float64(f)
+		return f
 	}
 }
 
@@ -28,28 +28,23 @@ func (x ILP) Mutate() ga.Entity {
 	return genILP()
 }
 
-func (x ILP) Crossover(e ga.Entity) ga.Entity {
-	var z ILP
+func (x ILP) Crossover(e ga.Entity, w float64) ga.Entity {
 	y := e.(ILP)
-	z[0] = math.Round(0.5*x[0] + 0.5*y[0])
-	z[1] = math.Round(0.5*x[1] + 0.5*y[1])
-	return z
+	x[0] = math.Round(w*x[0] + (1-w)*y[0])
+	x[1] = math.Round(w*x[1] + (1-w)*y[1])
+	return x
 }
 
 func TestILP(t *testing.T) {
 	m := ga.New(500, genILP)
-	e, ok := m.Evolve(32, 100000)
-	if !ok {
+	e, f, ok := m.Evolve(32, 100000)
+	if e != m.Elite() {
 		t.FailNow()
 	}
-
-	f := m.Felite()
-
-	println(f)
-	x := e.(ILP)
-	println(x[0], x[1])
-
-	if math.Abs(f-e.Fitness()) > 1e-10 {
+	if math.Abs(f-m.Felite()) > 1e-10 {
+		t.FailNow()
+	}
+	if !ok {
 		t.FailNow()
 	}
 	if f < 40-5 {
@@ -60,5 +55,5 @@ func TestILP(t *testing.T) {
 func genILP() ga.Entity {
 	mutex.Lock()
 	defer mutex.Unlock()
-	return ILP{float64(rnd.Intn(100)), float64(rnd.Intn(100))}
+	return ILP{float64(rnd.Intn(10)), float64(rnd.Intn(10))}
 }
