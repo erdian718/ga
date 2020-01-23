@@ -3,16 +3,9 @@ package ga_test
 import (
 	"math"
 	"math/rand"
-	"sync"
 	"testing"
-	"time"
 
 	"github.com/ofunc/ga"
-)
-
-var (
-	rnd   = rand.New(rand.NewSource(time.Now().Unix()))
-	mutex = sync.Mutex{}
 )
 
 type Rosenbrock struct {
@@ -24,7 +17,7 @@ func (r Rosenbrock) Fitness() float64 {
 }
 
 func (r Rosenbrock) Mutate() ga.Entity {
-	return gen()
+	return genRosenbrock()
 }
 
 func (r Rosenbrock) Crossover(e ga.Entity, w float64) ga.Entity {
@@ -33,7 +26,7 @@ func (r Rosenbrock) Crossover(e ga.Entity, w float64) ga.Entity {
 }
 
 func TestRosenbrock(t *testing.T) {
-	m := ga.New(1000, gen)
+	m := ga.New(1000, genRosenbrock)
 	e, f, ok := m.Evolve(32, 100000)
 	if e != m.Elite() {
 		t.FailNow()
@@ -57,19 +50,6 @@ func TestRosenbrock(t *testing.T) {
 	}
 }
 
-func BenchmarkRosenbrock(b *testing.B) {
-	m := ga.New(1000, gen)
-	for i := 0; i < b.N; i++ {
-		m.Next()
-	}
-}
-
-func sqr(x float64) float64 {
-	return x * x
-}
-
-func gen() ga.Entity {
-	mutex.Lock()
-	defer mutex.Unlock()
-	return Rosenbrock{10*rnd.Float64() - 5, 10*rnd.Float64() - 5}
+func genRosenbrock() ga.Entity {
+	return Rosenbrock{10*rand.Float64() - 5, 10*rand.Float64() - 5}
 }

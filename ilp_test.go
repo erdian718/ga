@@ -2,6 +2,7 @@ package ga_test
 
 import (
 	"math"
+	"math/rand"
 	"testing"
 
 	"github.com/ofunc/ga"
@@ -53,7 +54,5 @@ func TestILP(t *testing.T) {
 }
 
 func genILP() ga.Entity {
-	mutex.Lock()
-	defer mutex.Unlock()
-	return ILP{float64(rnd.Intn(10)), float64(rnd.Intn(10))}
+	return ILP{float64(rand.Intn(10)), float64(rand.Intn(10))}
 }
