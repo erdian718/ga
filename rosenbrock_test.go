@@ -34,19 +34,22 @@ func TestRosenbrock(t *testing.T) {
 	if math.Abs(f-e.Fitness()) > 1e-10 {
 		t.FailNow()
 	}
+	if math.Abs(f-m.Fitness()) > 1e-10 {
+		t.FailNow()
+	}
 	if !ok {
 		t.FailNow()
 	}
 
 	if f < -1e-2 {
-		t.FailNow()
+		t.Fatal("fitness(0):", f)
 	}
 	r := e.(Rosenbrock)
 	if math.Abs(r.X-1) > 0.1 {
-		t.FailNow()
+		t.Fatal("x(1):", r.X)
 	}
 	if math.Abs(r.Y-1) > 0.1 {
-		t.FailNow()
+		t.Fatal("y(1):", r.Y)
 	}
 }
 

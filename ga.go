@@ -1,4 +1,6 @@
 // Package ga implements the genetic algorithm.
+// It can handle negative fitness properly.
+// Mutation probability is adaptive and does not need to be set.
 package ga
 
 import (
@@ -9,24 +11,25 @@ import (
 
 // Entity is an entity of GA model.
 type Entity interface {
+	// Fitness is the fitness of this entity.
 	Fitness() float64
+	// Mutate is the mutation operation.
 	Mutate() Entity
+	// Crossover is the crossover operation.
 	Crossover(Entity, float64) Entity
 }
 
 // GA is a GA model.
 type GA struct {
-	n        int
-	elite    Entity
-	felite   float64
-	entities []Entity
-
-	rnd       *rand.Rand
-	fsum      float64
-	mean      float64
+	n         int
+	fitness   float64
+	elite     Entity
 	std       float64
-	std0      float64
+	base      float64
+	fsum      float64
+	rnd       *rand.Rand
 	fentities []float64
+	entities  []Entity
 	tentities []Entity
 }
 
@@ -34,18 +37,23 @@ type GA struct {
 func New(n int, g func() Entity) *GA {
 	m := &GA{
 		n:         n,
-		felite:    math.Inf(-1),
-		entities:  make([]Entity, n),
+		fitness:   math.Inf(-1),
 		rnd:       rand.New(rand.NewSource(time.Now().Unix())),
 		fentities: make([]float64, n),
+		entities:  make([]Entity, n),
 		tentities: make([]Entity, n),
 	}
 	for i := range m.entities {
 		m.entities[i] = g()
 	}
-	m.fitness()
-	m.std0 = m.std
+	m.adjust()
+	m.base = m.std
 	return m
+}
+
+// Fitness returns the fitness of current elite.
+func (m *GA) Fitness() float64 {
+	return m.fitness
 }
 
 // Elite returns the current elite.
@@ -53,14 +61,9 @@ func (m *GA) Elite() Entity {
 	return m.elite
 }
 
-// Felite returns the fitness of current elite.
-func (m *GA) Felite() float64 {
-	return m.felite
-}
-
-// Next gets the next generation of GA model, and returns the current elite.
+// Next gets the next generation of GA model, and returns the current elite and fitness.
 func (m *GA) Next() (Entity, float64) {
-	pm := math.Exp(-10 * m.std / m.std0)
+	pm := math.Exp(-10 * m.std / m.base)
 	for i := range m.tentities {
 		x, y, w := m.select2()
 		z := x.Crossover(y, w)
@@ -70,27 +73,27 @@ func (m *GA) Next() (Entity, float64) {
 		m.tentities[i] = z
 	}
 	m.entities, m.tentities = m.tentities, m.entities
-	m.fitness()
-	return m.elite, m.felite
+	m.adjust()
+	return m.elite, m.fitness
 }
 
 // Evolve runs the GA model until the elite k generations have not changed,
 // or the max of iterations has been reached.
 func (m *GA) Evolve(k int, max int) (Entity, float64, bool) {
-	i, elite := 0, m.elite
+	i, fitness := 0, m.fitness
 	for j := 0; i < k && j < max; i, j = i+1, j+1 {
-		x, _ := m.Next()
-		if x != elite {
-			i, elite = 0, x
+		_, f := m.Next()
+		if fitness < f {
+			i, fitness = 0, f
 		}
 	}
-	return elite, m.felite, i >= k
+	return m.elite, fitness, i >= k
 }
 
-func (m *GA) fitness() {
+func (m *GA) adjust() {
 	mean, std2 := 0.0, 0.0
-	for i, x := range m.entities {
-		f := x.Fitness()
+	for i, e := range m.entities {
+		f := e.Fitness()
 		m.fentities[i] = f
 
 		k1 := 1 / float64(i+1)
@@ -98,47 +101,44 @@ func (m *GA) fitness() {
 		mean = k1*f + k2*mean
 		std2 = k1*f*f + k2*std2
 
-		if m.felite < f {
-			m.elite, m.felite = x, f
+		if m.fitness < f {
+			m.fitness, m.elite = f, e
 		}
 	}
-	m.mean, m.std = mean, 1
+	std := 1.0
 	std2 -= mean * mean
 	if std2 > 0 {
-		m.std = math.Sqrt(std2)
+		std = math.Sqrt(std2)
 	}
-	m.sigmoid()
-}
 
-func (m *GA) sigmoid() {
 	m.fsum = 0
 	for i, f := range m.fentities {
-		f = 1 / (1 + math.Exp((m.mean-f)/m.std))
+		f = 1 / (1 + math.Exp((mean-f)/std))
 		m.fentities[i] = f
 		m.fsum += f
 	}
+	m.std = std
 }
 
 func (m *GA) select2() (Entity, Entity, float64) {
-	r1, r2 := m.rnd.Float64(), m.rnd.Float64()
-	if r1 > r2 {
-		r1, r2 = r2, r1
+	rx, ry := m.rnd.Float64(), m.rnd.Float64()
+	if rx > ry {
+		rx, ry = ry, rx
 	}
-	f0, d := m.fsum*r1, m.fsum*(r2-r1)
-	x, y := m.entities[0], m.entities[m.n-1]
-	wx, wy := 0.0, 0.0
+	fz, d, isx := m.fsum*rx, m.fsum*(ry-rx), true
+	x, y, wx, wy := m.entities[0], m.entities[m.n-1], 0.0, 0.0
 	for i, f := range m.fentities {
-		if f0 <= f {
-			if x == m.entities[0] {
-				x, wx = m.entities[i], f
-				f0 = f0 + d - f*r2
+		if fz <= f {
+			if isx {
+				x, wx, isx = m.entities[i], f, false
+				fz = fz + d - f*ry
 				continue
 			} else {
 				y, wy = m.entities[i], f
 				break
 			}
 		}
-		f0 -= f
+		fz -= f
 	}
 	return x, y, wx / (wx + wy)
 }

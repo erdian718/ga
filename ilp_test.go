@@ -42,14 +42,18 @@ func TestILP(t *testing.T) {
 	if e != m.Elite() {
 		t.FailNow()
 	}
-	if math.Abs(f-m.Felite()) > 1e-10 {
+	if math.Abs(f-e.Fitness()) > 1e-10 {
+		t.FailNow()
+	}
+	if math.Abs(f-m.Fitness()) > 1e-10 {
 		t.FailNow()
 	}
 	if !ok {
 		t.FailNow()
 	}
+
 	if f < 40-5 {
-		t.FailNow()
+		t.Fatal("fitness(40):", f)
 	}
 }
 
