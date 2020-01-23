@@ -102,12 +102,10 @@ func (m *GA) fitness() {
 			m.elite, m.felite = x, f
 		}
 	}
-	m.mean = mean
+	m.mean, m.std = mean, 1
 	std2 -= mean * mean
 	if std2 > 0 {
 		m.std = math.Sqrt(std2)
-	} else {
-		m.std = 1
 	}
 	m.sigmoid()
 }
