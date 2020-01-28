@@ -37,7 +37,7 @@ func (x ILP) Crossover(e ga.Entity, w float64) ga.Entity {
 }
 
 func TestILP(t *testing.T) {
-	m := ga.New(500, genILP)
+	m := ga.New(20, genILP)
 	e, f, ok := m.Evolve(32, 100000)
 	if e != m.Elite() {
 		t.FailNow()

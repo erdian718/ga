@@ -24,6 +24,7 @@ type GA struct {
 	n         int
 	fitness   float64
 	elite     Entity
+	pm        float64
 	std       float64
 	base      float64
 	fsum      float64
@@ -38,6 +39,7 @@ func New(n int, g func() Entity) *GA {
 	m := &GA{
 		n:         n,
 		fitness:   math.Inf(-1),
+		pm:        0.1,
 		rnd:       rand.New(rand.NewSource(time.Now().Unix())),
 		fentities: make([]float64, n),
 		entities:  make([]Entity, n),
@@ -63,11 +65,11 @@ func (m *GA) Elite() Entity {
 
 // Next gets the next generation of GA model, and returns the current elite and fitness.
 func (m *GA) Next() (Entity, float64) {
-	pm := math.Exp(-10 * m.std / m.base)
+	m.pm *= 0.2*math.Exp(-5*m.std/m.base) + 0.9
 	for i := range m.tentities {
 		x, y, w := m.select2()
 		z := x.Crossover(y, w)
-		if m.rnd.Float64() < pm {
+		if m.rnd.Float64() < m.pm {
 			z = z.Mutate()
 		}
 		m.tentities[i] = z
