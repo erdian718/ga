@@ -65,7 +65,6 @@ func (m *GA) Elite() Entity {
 
 // Next gets the next generation of GA model, and returns the current elite and fitness.
 func (m *GA) Next() (Entity, float64) {
-	m.pm *= 0.2*math.Exp(-5*m.std/m.base) + 0.9
 	for i := range m.tentities {
 		x, y, w := m.select2()
 		z := x.Crossover(y, w)
@@ -74,6 +73,7 @@ func (m *GA) Next() (Entity, float64) {
 		}
 		m.tentities[i] = z
 	}
+	m.pm *= 0.2*math.Exp(-5*m.std/m.base) + 0.9
 	m.entities, m.tentities = m.tentities, m.entities
 	m.adjust()
 	return m.elite, m.fitness
