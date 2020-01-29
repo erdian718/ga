@@ -45,7 +45,7 @@ func (v V) Crossover(e ga.Entity, w float64) ga.Entity {
 }
 
 func Example() {
-	m := ga.New(100, V{}.Mutate)
+	m := ga.New(1000, V{}.Mutate)
 	e, f, ok := m.Evolve(30, 10000)
 	fmt.Println("fitness: ", f)
 	fmt.Println("elite:", e)
