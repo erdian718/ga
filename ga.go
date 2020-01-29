@@ -51,19 +51,9 @@ func New(n int, g func() Entity) *GA {
 		entities:  make([]Entity, n),
 		tentities: make([]Entity, n),
 	}
-
-	var wg sync.WaitGroup
-	wg.Add(NC)
-	for c := 0; c < NC; c++ {
-		go func(c int) {
-			defer wg.Done()
-			for i := c; i < n; i += NC {
-				m.entities[i] = g()
-			}
-		}(c)
-	}
-	wg.Wait()
-
+	m.do(func(i int) {
+		m.entities[i] = g()
+	})
 	m.adjust()
 	m.base = m.std
 	return m
@@ -186,4 +176,18 @@ func (m *GA) select2() (Entity, Entity, float64) {
 		fz -= f
 	}
 	return x, y, wx / (wx + wy)
+}
+
+func (m *GA) do(f func(i int)) {
+	var wg sync.WaitGroup
+	wg.Add(NC)
+	for c := 0; c < NC; c++ {
+		go func(c int) {
+			defer wg.Done()
+			for i := c; i < m.n; i += NC {
+				f(i)
+			}
+		}(c)
+	}
+	wg.Wait()
 }
