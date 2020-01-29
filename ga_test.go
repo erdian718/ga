@@ -15,7 +15,7 @@ func (b Benchmark) Fitness() float64 {
 }
 
 func (b Benchmark) Mutate() ga.Entity {
-	return genBenchmark()
+	return Benchmark(200*rand.Float64() - 100)
 }
 
 func (b Benchmark) Crossover(e ga.Entity, w float64) ga.Entity {
@@ -28,14 +28,10 @@ func init() {
 }
 
 func BenchmarkGA(b *testing.B) {
-	m := ga.New(1000, genBenchmark)
+	m := ga.New(10000, Benchmark(0).Mutate)
 	for i := 0; i < b.N; i++ {
 		m.Next()
 	}
-}
-
-func genBenchmark() ga.Entity {
-	return Benchmark(200*rand.Float64() - 100)
 }
 
 func sqr(x float64) float64 {

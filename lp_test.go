@@ -29,7 +29,7 @@ func (x LP) Fitness() float64 {
 }
 
 func (x LP) Mutate() ga.Entity {
-	return genLP()
+	return LP{100 * rand.Float64(), 100 * rand.Float64()}
 }
 
 func (x LP) Crossover(e ga.Entity, w float64) ga.Entity {
@@ -40,8 +40,8 @@ func (x LP) Crossover(e ga.Entity, w float64) ga.Entity {
 }
 
 func TestLP(t *testing.T) {
-	m := ga.New(100, genLP)
-	e, f, ok := m.Evolve(32, 100000)
+	m := ga.New(100, LP{}.Mutate)
+	e, f, ok := m.Evolve(30, 100)
 	if e != m.Elite() {
 		t.FailNow()
 	}
@@ -58,8 +58,4 @@ func TestLP(t *testing.T) {
 	if f < 3360-100 {
 		t.Fatal("fitness(3360):", f)
 	}
-}
-
-func genLP() ga.Entity {
-	return LP{100 * rand.Float64(), 100 * rand.Float64()}
 }

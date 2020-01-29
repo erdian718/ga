@@ -17,7 +17,7 @@ func (r MIN) Fitness() float64 {
 }
 
 func (r MIN) Mutate() ga.Entity {
-	return genMIN()
+	return MIN{10*rand.Float64() - 5, 10*rand.Float64() - 5}
 }
 
 func (r MIN) Crossover(e ga.Entity, w float64) ga.Entity {
@@ -26,8 +26,8 @@ func (r MIN) Crossover(e ga.Entity, w float64) ga.Entity {
 }
 
 func TestMIN(t *testing.T) {
-	m := ga.New(100, genMIN)
-	e, f, ok := m.Evolve(32, 100000)
+	m := ga.New(100, MIN{}.Mutate)
+	e, f, ok := m.Evolve(30, 100)
 	if e != m.Elite() {
 		t.FailNow()
 	}
@@ -51,8 +51,4 @@ func TestMIN(t *testing.T) {
 	if math.Abs(r.Y) > 0.05 {
 		t.Fatal("y(0):", r.Y)
 	}
-}
-
-func genMIN() ga.Entity {
-	return MIN{10*rand.Float64() - 5, 10*rand.Float64() - 5}
 }

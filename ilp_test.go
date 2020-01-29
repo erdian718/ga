@@ -26,7 +26,7 @@ func (x ILP) Fitness() float64 {
 }
 
 func (x ILP) Mutate() ga.Entity {
-	return genILP()
+	return ILP{float64(rand.Intn(10)), float64(rand.Intn(10))}
 }
 
 func (x ILP) Crossover(e ga.Entity, w float64) ga.Entity {
@@ -37,8 +37,8 @@ func (x ILP) Crossover(e ga.Entity, w float64) ga.Entity {
 }
 
 func TestILP(t *testing.T) {
-	m := ga.New(20, genILP)
-	e, f, ok := m.Evolve(32, 100000)
+	m := ga.New(20, ILP{}.Mutate)
+	e, f, ok := m.Evolve(30, 100)
 	if e != m.Elite() {
 		t.FailNow()
 	}
@@ -55,8 +55,4 @@ func TestILP(t *testing.T) {
 	if f < 40-5 {
 		t.Fatal("fitness(40):", f)
 	}
-}
-
-func genILP() ga.Entity {
-	return ILP{float64(rand.Intn(10)), float64(rand.Intn(10))}
 }
