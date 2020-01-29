@@ -50,7 +50,7 @@ func New(n int, g func() Entity) *GA {
 		entities:  make([]Entity, n),
 		tentities: make([]Entity, n),
 	}
-	m.do(func(i int) {
+	m.do(func(c, i int) {
 		m.entities[i] = g()
 	})
 	m.base = m.adjust()
@@ -103,7 +103,7 @@ func (m *GA) RandExp() float64 {
 
 // Next gets the next generation of GA model, and returns the current elite and fitness.
 func (m *GA) Next() (Entity, float64) {
-	m.do(func(i int) {
+	m.do(func(c, i int) {
 		x, y, w := m.select2()
 		z := x.Crossover(y, w)
 		if m.RandFloat() < m.pm {
@@ -130,29 +130,39 @@ func (m *GA) Evolve(k int, max int) (Entity, float64, bool) {
 }
 
 func (m *GA) adjust() float64 {
-	sm, sv := 0.0, 0.0
-	for i, e := range m.entities {
-		f := e.Fitness()
-		sm, sv = sm+f, sv+f*f
-		m.fentities[i] = f
-		if m.fitness < f {
-			m.fitness, m.elite = f, e
-		}
+	sms, svs, mfs, mes := make([]float64, NC), make([]float64, NC), make([]float64, NC), make([]Entity, NC)
+	for c := range mfs {
+		mfs[c] = math.Inf(-1)
 	}
-	mean, std := sm/float64(m.n), 1.0
-	if v := sv/float64(m.n) - mean*mean; v > 0 {
+	m.do(func(c, i int) {
+		e := m.entities[i]
+		f := e.Fitness()
+		m.fentities[i] = f
+		sms[c] += f
+		svs[c] += f * f
+		if mfs[c] < f {
+			mfs[c], mes[c] = f, e
+		}
+	})
+	if c, f := max(mfs); m.fitness < f {
+		m.fitness, m.elite = f, mes[c]
+	}
+
+	mean, std := sum(sms)/float64(m.n), 1.0
+	if v := sum(svs)/float64(m.n) - mean*mean; v > 0 {
 		std = math.Sqrt(v)
 	}
 	if m.base > 0 {
 		m.pm *= 0.2*math.Exp(-5*std/m.base) + 0.9
 	}
 
-	m.fsum = 0
-	for i, f := range m.fentities {
-		f = 1 / (1 + math.Exp((mean-f)/std))
+	fsums := make([]float64, NC)
+	m.do(func(c, i int) {
+		f := 1 / (1 + math.Exp((mean-m.fentities[i])/std))
 		m.fentities[i] = f
-		m.fsum += f
-	}
+		fsums[c] += f
+	})
+	m.fsum = sum(fsums)
 	return std
 }
 
@@ -179,16 +189,34 @@ func (m *GA) select2() (Entity, Entity, float64) {
 	return x, y, wx / (wx + wy)
 }
 
-func (m *GA) do(f func(i int)) {
+func (m *GA) do(f func(c, i int)) {
 	var wg sync.WaitGroup
 	wg.Add(NC)
 	for c := 0; c < NC; c++ {
 		go func(c int) {
 			defer wg.Done()
 			for i := c; i < m.n; i += NC {
-				f(i)
+				f(c, i)
 			}
 		}(c)
 	}
 	wg.Wait()
+}
+
+func sum(xs []float64) float64 {
+	s := 0.0
+	for _, x := range xs {
+		s += x
+	}
+	return s
+}
+
+func max(xs []float64) (int, float64) {
+	k, m := 0, math.Inf(-1)
+	for i, x := range xs {
+		if x > m {
+			k, m = i, x
+		}
+	}
+	return k, m
 }
