@@ -6,6 +6,7 @@ package ga
 import (
 	"math"
 	"math/rand"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -36,6 +37,9 @@ type GA struct {
 	tentities []Entity
 }
 
+// NC is the number of concurrency, default to runtime.GOMAXPROCS.
+var NC = runtime.GOMAXPROCS(0)
+
 // New creates a GA model.
 func New(n int, g func() Entity) *GA {
 	m := &GA{
@@ -47,9 +51,19 @@ func New(n int, g func() Entity) *GA {
 		entities:  make([]Entity, n),
 		tentities: make([]Entity, n),
 	}
-	for i := range m.entities {
-		m.entities[i] = g()
+
+	var wg sync.WaitGroup
+	wg.Add(NC)
+	for c := 0; c < NC; c++ {
+		go func(c int) {
+			defer wg.Done()
+			for i := c; i < n; i += NC {
+				m.entities[i] = g()
+			}
+		}(c)
 	}
+	wg.Wait()
+
 	m.adjust()
 	m.base = m.std
 	return m
