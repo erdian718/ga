@@ -27,7 +27,6 @@ type GA struct {
 	fitness   float64
 	elite     Entity
 	pm        float64
-	std       float64
 	base      float64
 	fsum      float64
 	rnd       *rand.Rand
@@ -54,8 +53,7 @@ func New(n int, g func() Entity) *GA {
 	m.do(func(i int) {
 		m.entities[i] = g()
 	})
-	m.adjust()
-	m.base = m.std
+	m.base = m.adjust()
 	return m
 }
 
@@ -113,7 +111,6 @@ func (m *GA) Next() (Entity, float64) {
 		}
 		m.tentities[i] = z
 	})
-	m.pm *= 0.2*math.Exp(-5*m.std/m.base) + 0.9
 	m.entities, m.tentities = m.tentities, m.entities
 	m.adjust()
 	return m.elite, m.fitness
@@ -132,7 +129,7 @@ func (m *GA) Evolve(k int, max int) (Entity, float64, bool) {
 	return m.elite, fitness, i >= k
 }
 
-func (m *GA) adjust() {
+func (m *GA) adjust() float64 {
 	sm, sv := 0.0, 0.0
 	for i, e := range m.entities {
 		f := e.Fitness()
@@ -146,13 +143,17 @@ func (m *GA) adjust() {
 	if v := sv/float64(m.n) - mean*mean; v > 0 {
 		std = math.Sqrt(v)
 	}
+	if m.base > 0 {
+		m.pm *= 0.2*math.Exp(-5*std/m.base) + 0.9
+	}
 
-	m.fsum, m.std = 0, std
+	m.fsum = 0
 	for i, f := range m.fentities {
 		f = 1 / (1 + math.Exp((mean-f)/std))
 		m.fentities[i] = f
 		m.fsum += f
 	}
+	return std
 }
 
 func (m *GA) select2() (Entity, Entity, float64) {
