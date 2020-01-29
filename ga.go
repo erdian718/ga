@@ -93,33 +93,26 @@ func (m *GA) Evolve(k int, max int) (Entity, float64, bool) {
 }
 
 func (m *GA) adjust() {
-	mean, std2 := 0.0, 0.0
+	sm, sv := 0.0, 0.0
 	for i, e := range m.entities {
 		f := e.Fitness()
+		sm, sv = sm+f, sv+f*f
 		m.fentities[i] = f
-
-		k1 := 1 / float64(i+1)
-		k2 := 1 - k1
-		mean = k1*f + k2*mean
-		std2 = k1*f*f + k2*std2
-
 		if m.fitness < f {
 			m.fitness, m.elite = f, e
 		}
 	}
-	std := 1.0
-	std2 -= mean * mean
-	if std2 > 0 {
-		std = math.Sqrt(std2)
+	mean, std := sm/float64(m.n), 1.0
+	if v := sv/float64(m.n) - mean*mean; v > 0 {
+		std = math.Sqrt(v)
 	}
 
-	m.fsum = 0
+	m.fsum, m.std = 0, std
 	for i, f := range m.fentities {
 		f = 1 / (1 + math.Exp((mean-f)/std))
 		m.fentities[i] = f
 		m.fsum += f
 	}
-	m.std = std
 }
 
 func (m *GA) select2() (Entity, Entity, float64) {
