@@ -6,6 +6,7 @@ package ga
 import (
 	"math"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -29,6 +30,7 @@ type GA struct {
 	base      float64
 	fsum      float64
 	rnd       *rand.Rand
+	mutex     sync.Mutex
 	fentities []float64
 	entities  []Entity
 	tentities []Entity
@@ -61,6 +63,40 @@ func (m *GA) Fitness() float64 {
 // Elite returns the current elite.
 func (m *GA) Elite() Entity {
 	return m.elite
+}
+
+// RandInt returns, as an int, a random number in [0, n).
+// It is safe for concurrent use by multiple goroutines.
+func (m *GA) RandInt(n int) int {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	return m.rnd.Intn(n)
+}
+
+// RandFloat returns, as a float64, a random number in [0.0, 1.0).
+// It is safe for concurrent use by multiple goroutines.
+func (m *GA) RandFloat() float64 {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	return m.rnd.Float64()
+}
+
+// RandNorm returns a normally distributed float64 in the range [-math.MaxFloat64, +math.MaxFloat64]
+// with standard normal distribution (mean = 0, stddev = 1).
+// It is safe for concurrent use by multiple goroutines.
+func (m *GA) RandNorm() float64 {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	return m.rnd.NormFloat64()
+}
+
+// RandExp returns an exponentially distributed float64 in the range (0, +math.MaxFloat64]
+// with an exponential distribution whose rate parameter (lambda) is 1 and whose mean is 1/lambda (1).
+// It is safe for concurrent use by multiple goroutines.
+func (m *GA) RandExp() float64 {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	return m.rnd.ExpFloat64()
 }
 
 // Next gets the next generation of GA model, and returns the current elite and fitness.
