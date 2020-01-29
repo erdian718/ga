@@ -104,7 +104,7 @@ func (m *GA) Next() (Entity, float64) {
 	for i := range m.tentities {
 		x, y, w := m.select2()
 		z := x.Crossover(y, w)
-		if m.rnd.Float64() < m.pm {
+		if m.RandFloat() < m.pm {
 			z = z.Mutate()
 		}
 		m.tentities[i] = z
@@ -152,7 +152,7 @@ func (m *GA) adjust() {
 }
 
 func (m *GA) select2() (Entity, Entity, float64) {
-	rx, ry := m.rnd.Float64(), m.rnd.Float64()
+	rx, ry := m.RandFloat(), m.RandFloat()
 	if rx > ry {
 		rx, ry = ry, rx
 	}
