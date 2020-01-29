@@ -120,6 +120,11 @@ func (m *GA) adjust() float64 {
 	}
 	if m.base > 0 {
 		m.pm *= 0.2*math.Exp(-5*std/m.base) + 0.9
+		if m.pm > 0.1 {
+			m.pm = 0.1
+		} else if m.pm < 0.0001 {
+			m.pm = 0.0001
+		}
 	}
 
 	fsums := make([]float64, NC)
